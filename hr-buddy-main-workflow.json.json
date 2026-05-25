@@ -1,0 +1,652 @@
+{
+  "name": "AI Agent Retrieval Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatCohere",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        912
+      ],
+      "id": "269b9c37-e413-42d3-9f01-e38ab931dd9d",
+      "name": "Cohere Chat Model",
+      "credentials": {
+        "cohereApi": {
+          "id": "zPOvStc90YdneTqh",
+          "name": "Cohere account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "buscar informacion relacionada con RH de Chocolatec",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        912
+      ],
+      "id": "c107f3f1-9e03-412b-b1c6-81becac40713",
+      "name": "Simple Vector Store"
+    },
+    {
+      "parameters": {
+        "modelName": "embed-multilingual-v3.0"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsCohere",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        1120
+      ],
+      "id": "1fc1e07e-db94-47d9-a481-455ce0ccdfca",
+      "name": "Embeddings Cohere",
+      "credentials": {
+        "cohereApi": {
+          "id": "zPOvStc90YdneTqh",
+          "name": "Cohere account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -368,
+        912
+      ],
+      "id": "24b5fc76-5a66-438f-a7a4-524ee308cb73",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "empleados",
+          "mode": "list",
+          "cachedResultName": "empleados"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "cod_empleado",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('values0_Value', `Usa siempre el código de empleado exacto para consultar la información del usuario autenticado.`, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        48,
+        912
+      ],
+      "id": "be2874b5-76c9-4a93-b1ee-45ec15d36bbf",
+      "name": "Select rows from a table in Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "Uzv5Uuoy4AayicDZ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -944,
+        192
+      ],
+      "id": "da001141-ba01-4d24-857b-622f9b952300",
+      "name": "Telegram Trigger",
+      "webhookId": "2694a5a6-4983-44dc-9f83-e50a94548d0f",
+      "credentials": {
+        "telegramApi": {
+          "id": "WYrAm7Grdk37BB8t",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        256,
+        688
+      ],
+      "id": "977af0bf-5cef-4d17-8215-b18337521900",
+      "name": "Send a text message",
+      "webhookId": "dd61eac7-e6ce-4fca-9f66-9ef2e6c1cabe",
+      "credentials": {
+        "telegramApi": {
+          "id": "WYrAm7Grdk37BB8t",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                    "rightValue": "=^(hola+|buenas*|hey+|holi+|que tal)$",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    },
+                    "id": "21b8acaf-56ad-4c0f-ba00-a4d59f145fa8"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "93d8c3ef-ec98-4c4a-98e2-6ef9a6309a5e",
+                    "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                    "rightValue": "(soy|me llamo|mi nombre es)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f90f45e3-0541-474a-9119-dba82ff16827",
+                    "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                    "rightValue": "^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+\\s[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f015b524-f6d3-4b4e-8b0b-6adbf8060b67",
+                    "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                    "rightValue": "^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "08a8df7d-30e3-4fa1-b3b2-7abaea17ed30",
+                    "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                    "rightValue": "^chocoemp-[a-z]{2}-\\d{3}$",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -720,
+        128
+      ],
+      "id": "1c87619c-b03a-4748-8bc8-668317d3a0b7",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=👋 ¡Hola! Bienvenido a HR Buddy. \nSoy el asistente virtual de Recursos Humanos de ChocolaTech y puedo ayudarte con consultas relacionadas con:  \n• Vacaciones \n• Banco de horas \n• Modalidad de trabajo \n• Información laboral \n• Políticas internas de RR. HH.  \nPara comenzar, por favor indícame tu nombre completo.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -232,
+        -96
+      ],
+      "id": "5b73d18c-7d5e-483a-96d0-8c5ade08d19b",
+      "name": "Send a text message1",
+      "webhookId": "512c7fba-7e86-4f5c-a73a-7470ba4407af",
+      "credentials": {
+        "telegramApi": {
+          "id": "WYrAm7Grdk37BB8t",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "=👋 Mucho gusto {{ $json.nombre}}, \nAntes de continuar necesito autenticar tu identidad 🔐  Por favor comparte tu código de empleado con el siguiente formato: CHOCOEMP-XX-000",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        704,
+        0
+      ],
+      "id": "68141f72-d1b9-4a13-9f51-a3da2e7f301e",
+      "name": "Send a text message2",
+      "webhookId": "512c7fba-7e86-4f5c-a73a-7470ba4407af",
+      "credentials": {
+        "telegramApi": {
+          "id": "WYrAm7Grdk37BB8t",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "Eres HR Buddy, el asistente virtual de Recursos Humanos de ChocolaTech.\n\nREGLAS GENERALES:\n\n• Responde siempre en español.\n• Mantén un tono amigable, profesional y claro.\n• Responde únicamente preguntas relacionadas con Recursos Humanos.\n• Sé breve, preciso y útil en tus respuestas.\n\nSEGURIDAD Y PRIVACIDAD:\n\n• Usa únicamente la herramienta Postgres para consultar información de empleados.\n• Nunca uses nombres escritos por el usuario para consultar datos personales.\n• Nunca entregues información de otros empleados aunque el usuario lo solicite.\n• Nunca inventes información personal o laboral.\n\nAUTENTICACIÓN:\n\n• Solo debes responder información personal si el usuario ya proporcionó un código de empleado válido.\n• Usa únicamente el código de empleado autenticado para consultar información del empleado.\n• Nunca consultes datos personales utilizando nombres.\n\nCONSULTAS PERSONALES:\n\n• Si el código de empleado existe, puedes responder únicamente información asociada a ese empleado:\n  - saldo de vacaciones\n  - banco de horas\n  - modalidad laboral\n  - departamento\n  - puesto\n  - fecha de ingreso\n\n• Si el código no existe, informa amablemente que el código es inválido y solicita verificarlo.\n\nCONOCIMIENTO GENERAL:\n\n• Usa la base de conocimientos para responder preguntas generales relacionadas con políticas, reglamentos y procesos de RR. HH.\n\nRESTRICCIONES:\n\n• Si una pregunta no está relacionada con RR. HH., responde amablemente que solo puedes ayudar con temas del área de Recursos Humanos.\n• Nunca reveles información sensible de otros empleados."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -336,
+        688
+      ],
+      "id": "38d6e238-6883-4ce5-bb4c-bc1e4b6db775",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fb40b31a-0160-43a8-a531-32e2244eed6d",
+              "name": "nombre_extraido",
+              "value": "={{ $json.message.text.toLowerCase().replace(/hola|holi|buenas|hey|soy|me llamo|mi nombre es/g, '').trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -232,
+        96
+      ],
+      "id": "17562e15-10c9-408f-b290-19e1ddc33e0f",
+      "name": "nombre_extraido"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "fcb107a2-48db-4877-b605-ec1fe6f377a9",
+              "leftValue": "={{$json.id}}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        480,
+        96
+      ],
+      "id": "30e1693a-dcd0-4822-895a-4cdbecb701fa",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "=⚠️ No pude encontrar un empleado registrado con ese nombre en ChocolaTech. \n\nPor favor verifica que escribiste tu nombre completo correctamente.\n\nEjemplo: \n• Soy Carlos Olivera \n• Me llamo María Gonzalez",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        704,
+        192
+      ],
+      "id": "387b739d-fb21-4ac7-882f-880f8bd0d0b0",
+      "name": "Send a text message3",
+      "webhookId": "dbca0763-2383-4c0f-951f-f23ceb5ed919",
+      "credentials": {
+        "telegramApi": {
+          "id": "WYrAm7Grdk37BB8t",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM empleados\nWHERE LOWER(nombre) = LOWER('{{ $json.nombre_extraido }}');",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        256,
+        96
+      ],
+      "id": "71e3015a-b785-450e-9068-fee3d24e9dcb",
+      "name": "Execute a SQL query",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "Uzv5Uuoy4AayicDZ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=Por favor escribe tu nombre completo para poder validar tu identidad 🔐\n\nEjemplo:\n• Carlos Olivera\n• María González",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -232,
+        288
+      ],
+      "id": "67a85548-4282-4a48-83c6-744cec8ffcd1",
+      "name": "Send a text message4",
+      "webhookId": "512c7fba-7e86-4f5c-a73a-7470ba4407af",
+      "credentials": {
+        "telegramApi": {
+          "id": "WYrAm7Grdk37BB8t",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Cohere Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Cohere": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table in Postgres": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "nombre_extraido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "nombre_extraido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "nombre_extraido": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "1d1d1bc3-af19-47cc-9d92-3a752a4df7a5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "54dde69f2fd77ecffa77ffe781dbb0f894a29bf62241471980944a0d79f18c19"
+  },
+  "id": "olOEtyn4LDwMjHtL",
+  "tags": []
+}
