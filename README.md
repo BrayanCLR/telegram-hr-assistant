@@ -84,6 +84,23 @@ Este flujo valida:
 
 ---
 
+# 📥 Workflow de Ingesta RAG
+
+Este flujo se encarga de preparar la base de conocimiento utilizada por el asistente inteligente.
+
+Incluye:
+
+* carga de documentos,
+* procesamiento de información,
+* generación de embeddings,
+* almacenamiento vectorial,
+* preparación del contexto utilizado por el AI Agent.
+
+![RAG Ingestion Workflow](assets/Workflow_Ingestion_RAG.png)
+
+---
+
+
 # 🧠 Workflow RAG
 
 El flujo RAG administra:
@@ -139,6 +156,7 @@ hr-buddy-ai-assistant/
 └── assets/
     ├── main-workflow.png
     ├── authentication-flow.png
+    ├── Workflow_Ingestion_RAG.png
     ├── rag-workflow.png
     ├── telegram-demo-1.png
     ├── telegram-demo-2.png
